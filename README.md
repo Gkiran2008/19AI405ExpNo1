@@ -47,58 +47,91 @@
 ```python
 import random
 
-class HealthMonitoringAgent:
-    def __init__(self, patient_data):
-        self.patient_data = patient_data
+class Patient:
+    def __init__(self, room_name):
+        self.room = room_name
+        self.temperature = random.uniform(97.0, 102.0)  # random patient temp
 
-    def monitor_health(self):
+    def is_unhealthy(self):
+        return self.temperature > 98.5
+
+    def treat(self):
+        """Prescribe medicine and set to healthy temperature"""
+        if self.is_unhealthy():
+            self.temperature = 98.0
+            return True
+        return False
+
+
+class MedicinePrescribingAgent:
+    def __init__(self, rooms, patients):
+        self.rooms = rooms
+        self.patients = patients
+        self.location = rooms[0]  # start in Room A
+        self.performance = 0
+
+    def sense(self, room):
+        """Check patient's temperature in current room"""
+        patient = self.patients[room]
+        return patient.temperature
+
+    def act(self):
+        """Main decision-making and action loop"""
         while True:
-            current_health_state = self.sensors.get_health_state()
-            action = self.choose_action(current_health_state)
-            self.actuators.perform_action(action)
-            if self.choose_action(current_health_state)=="No specific action needed":
+            treated_any = False
+            for room in self.rooms:
+                # Move to the room if not already there
+                if self.location != room:
+                    print(f"Agent moving from {self.location} → {room}")
+                    self.location = room
+                    self.performance -= 1  # movement penalty
+
+                # Sense patient's state
+                temp = self.sense(room)
+                print(f"[{room}] Patient temperature: {temp:.1f}")
+
+                # If unhealthy → treat
+                if temp > 98.5:
+                    if self.patients[room].treat():
+                        print(f"💊 Treated patient in {room}")
+                        self.performance += 10
+                        treated_any = True
+                else:
+                    print(f"✅ Patient in {room} is healthy")
+
+            # Stop if all patients healthy
+            if all(not p.is_unhealthy() for p in self.patients.values()):
+                print("\nAll patients are healthy. Stopping agent.")
                 break
 
-    def choose_action(self, current_health_state):
-        # Example: A simple rule-based system for decision-making
-        if current_health_state['heart_rate'] > 120:
-            return "Alert healthcare provider: High heart rate detected"
-        elif current_health_state['blood_pressure'] > 140:
-            return "Alert healthcare provider: High blood pressure detected"
-        elif current_health_state['temperature'] > 38:
-            return "Recommend rest and monitor temperature"
-        else:
-            return "No specific action needed"
+            # If treated someone, continue loop to re-check
+            if treated_any:
+                print("Re-checking rooms...\n")
+            else:
+                print("No unhealthy patients found. Stopping agent.")
+                break
 
-class HealthSensors:
-    def get_health_state(self):
-        # Example: Simulate health data retrieval (replace with real data in a practical scenario)
-        return {
-            'heart_rate': random.randint(60, 150),
-            'blood_pressure': random.randint(90, 160),
-            'temperature': random.uniform(36.0, 38.5)
-        }
-
-class HealthActuators:
-    def perform_action(self, action):
-        # Example: Print or log the action (in a real scenario, this might involve more complex actions)
-        print(action)
 
 if __name__ == "__main__":
-    patient_data = {'patient_id': 123, 'name': 'John Doe', 'age': 40}
-    
-    health_sensors = HealthSensors()
-    health_actuators = HealthActuators()
-    
-    health_monitoring_agent = HealthMonitoringAgent(patient_data)
-    health_monitoring_agent.sensors = health_sensors
-    health_monitoring_agent.actuators = health_actuators
-    
-    health_monitoring_agent.monitor_health()
+    # Define environment: 2 rooms with patients
+    rooms = ["Room A", "Room B"]
+    patients = {room: Patient(room) for room in rooms}
+
+    # Show initial patient states
+    print("Initial patient states:")
+    for r, p in patients.items():
+        print(f"{r}: {p.temperature:.1f}")
+
+    # Run agent
+    agent = MedicinePrescribingAgent(rooms, patients)
+    agent.act()
+
+    print(f"\nFinal Performance Score: {agent.performance}")
 ```
 # OUTPUT
 
-<img width="813" height="133" alt="image" src="https://github.com/user-attachments/assets/4e776466-71fa-4889-9e4b-3521ab32a875" />
+<img width="780" height="342" alt="image" src="https://github.com/user-attachments/assets/ab2290e3-5746-46e7-9b2e-460ceb30eb10" />
+
 
 # RESULT : 
 
